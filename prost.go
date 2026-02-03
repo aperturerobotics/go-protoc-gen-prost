@@ -38,26 +38,42 @@ func CompileProtocGenProst(ctx context.Context, r wazero.Runtime) (wazero.Compil
 }
 
 // NewProtocGenProst creates a new ProtocGenProst instance using the embedded WASM.
+// This instantiates WASI on the runtime. For shared runtimes where WASI is already
+// instantiated, use NewProtocGenProstWithWASI instead.
 // Call Close() when done to release resources.
 func NewProtocGenProst(ctx context.Context, r wazero.Runtime) (*ProtocGenProst, error) {
+	// Instantiate WASI
+	if _, err := wasi_snapshot_preview1.Instantiate(ctx, r); err != nil {
+		return nil, fmt.Errorf("failed to instantiate WASI: %w", err)
+	}
+	return NewProtocGenProstWithWASI(ctx, r)
+}
+
+// NewProtocGenProstWithWASI creates a new ProtocGenProst instance on a runtime
+// that already has WASI instantiated. Use this when sharing a runtime with other
+// WASM modules (e.g., protoc).
+func NewProtocGenProstWithWASI(ctx context.Context, r wazero.Runtime) (*ProtocGenProst, error) {
 	compiled, err := CompileProtocGenProst(ctx, r)
 	if err != nil {
 		return nil, err
 	}
-	return NewProtocGenProstWithModule(ctx, r, compiled)
+	return NewProtocGenProstWithWASIAndModule(ctx, r, compiled)
 }
 
 // NewProtocGenProstWithModule creates a new ProtocGenProst instance using a pre-compiled module.
+// This instantiates WASI on the runtime. For shared runtimes where WASI is already
+// instantiated, use NewProtocGenProstWithWASIAndModule instead.
 func NewProtocGenProstWithModule(ctx context.Context, r wazero.Runtime, compiled wazero.CompiledModule) (*ProtocGenProst, error) {
-	// Instantiate WASI if not already present
-	// Ignore "already instantiated" error since the runtime may be shared with other WASM modules
+	// Instantiate WASI
 	if _, err := wasi_snapshot_preview1.Instantiate(ctx, r); err != nil {
-		// Check if this is an "already instantiated" error - if so, ignore it
-		if err.Error() != "module[wasi_snapshot_preview1] has already been instantiated" {
-			return nil, fmt.Errorf("failed to instantiate WASI: %w", err)
-		}
+		return nil, fmt.Errorf("failed to instantiate WASI: %w", err)
 	}
+	return NewProtocGenProstWithWASIAndModule(ctx, r, compiled)
+}
 
+// NewProtocGenProstWithWASIAndModule creates a new ProtocGenProst instance using
+// a pre-compiled module on a runtime that already has WASI instantiated.
+func NewProtocGenProstWithWASIAndModule(ctx context.Context, r wazero.Runtime, compiled wazero.CompiledModule) (*ProtocGenProst, error) {
 	// Build module config
 	modCfg := wazero.NewModuleConfig().WithName(ProtocGenProstWASMFilename)
 
