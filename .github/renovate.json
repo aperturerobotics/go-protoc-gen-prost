@@ -15,9 +15,12 @@
     },
     {
       "matchManagers": ["gomod"],
-      "matchPackageNames": [
-        "github.com/aperturerobotics/go-protoc-gen-prost"
-      ],
+      "matchPackageNames": ["github.com/aperturerobotics/go-protoc-gen-prost"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["golang"],
       "enabled": false
     }
   ]
