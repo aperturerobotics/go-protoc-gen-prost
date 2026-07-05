@@ -1,13 +1,11 @@
 # go-protoc-gen-prost
 
-[![GoDoc Widget]][GoDoc] [![Go Report Card Widget]][Go Report Card]
+[![GoDoc Widget]][GoDoc]
 
 > A Go module that embeds protoc-gen-prost as a WebAssembly module for pure-Go Protocol Buffer code generation.
 
 [GoDoc]: https://godoc.org/github.com/aperturerobotics/go-protoc-gen-prost
 [GoDoc Widget]: https://godoc.org/github.com/aperturerobotics/go-protoc-gen-prost?status.svg
-[Go Report Card Widget]: https://goreportcard.com/badge/github.com/aperturerobotics/go-protoc-gen-prost
-[Go Report Card]: https://goreportcard.com/report/github.com/aperturerobotics/go-protoc-gen-prost
 
 ## Related Projects
 
