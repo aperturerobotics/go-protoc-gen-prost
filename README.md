@@ -106,16 +106,16 @@ func main() {
 
 ## Updating the WASM Binary
 
-To update to a new version of protoc-gen-prost:
+To embed the build at a commit of protoc-gen-prost (the wasi branch by default):
 
 ```bash
-./update-prost.bash
+./update-prost.bash [ref]
 ```
 
 This script:
-1. Fetches the latest release from `aperturerobotics/protoc-gen-prost`
-2. Downloads the `protoc-gen-prost.wasm` artifact
-3. Updates `version.go` with the new version info
+1. Resolves the ref in `aperturerobotics/protoc-gen-prost` to a full commit
+2. Downloads `dist/protoc-gen-prost.wasm` at that commit
+3. Writes `version.go` with the commit and the artifact URL
 
 ## Building the WASM Binary
 

@@ -2,53 +2,46 @@
 set -euo pipefail
 
 # protoc-gen-prost WASI Update Script
-# Downloads the WASM binary from aperturerobotics/protoc-gen-prost releases
+# Embeds dist/protoc-gen-prost.wasm from a commit of aperturerobotics/protoc-gen-prost.
+#
+# Usage: ./update-prost.bash [ref]
+#
+# The ref is a commit, branch or tag of the repository and defaults to its wasi
+# branch. It is resolved to a full commit so version.go names the exact source.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="aperturerobotics/protoc-gen-prost"
-ASSET_NAME="protoc-gen-prost.wasm"
 OUTPUT_NAME="protoc-gen-prost.wasm"
+REF="${1:-wasi}"
 
-echo "Fetching latest release from $REPO..."
-
-# Get the latest release
-RELEASE_INFO=$(gh release view --repo "$REPO" --json tagName,assets)
-
-TAG=$(echo "$RELEASE_INFO" | jq -r '.tagName')
-DOWNLOAD_URL=$(echo "$RELEASE_INFO" | jq -r ".assets[] | select(.name == \"$ASSET_NAME\") | .url")
-
-if [ -z "$TAG" ] || [ "$TAG" = "null" ]; then
-    echo "Error: Could not find release"
+echo "Resolving $REF in $REPO..."
+COMMIT=$(gh api "repos/$REPO/commits/$REF" --jq .sha)
+if [ -z "$COMMIT" ]; then
+    echo "Error: Could not resolve $REF"
     exit 1
 fi
 
-if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
-    echo "Error: Could not find $ASSET_NAME in release $TAG"
-    exit 1
-fi
-
-echo "Found release: $TAG"
-echo "Downloading $ASSET_NAME..."
-
-# Download the WASM file
-gh release download "$TAG" --repo "$REPO" --pattern "$ASSET_NAME" --output "$SCRIPT_DIR/$OUTPUT_NAME" --clobber
+DOWNLOAD_URL="https://raw.githubusercontent.com/$REPO/$COMMIT/dist/$OUTPUT_NAME"
+echo "Downloading $DOWNLOAD_URL..."
+curl --fail --silent --show-error --location "$DOWNLOAD_URL" --output "$SCRIPT_DIR/$OUTPUT_NAME"
 
 echo "Downloaded $OUTPUT_NAME ($(wc -c < "$SCRIPT_DIR/$OUTPUT_NAME" | tr -d ' ') bytes)"
 
 # Generate version info Go file
 echo "Generating version.go..."
-cat > "$SCRIPT_DIR/version.go" << EOF
+cat > "$SCRIPT_DIR/version.go" << GO
 package prost
 
-// protoc-gen-prost WASI version information
+// protoc-gen-prost WASI build information
 const (
-	// Version is the protoc-gen-prost version
-	Version = "$TAG"
-	// DownloadURL is the URL where this WASM file was downloaded from
-	DownloadURL = "https://github.com/$REPO/releases/download/$TAG/$ASSET_NAME"
+	// Version is the full commit of $REPO whose
+	// dist/$OUTPUT_NAME is embedded.
+	Version = "$COMMIT"
+	// DownloadURL is the URL of the embedded WASM file at that commit.
+	DownloadURL = "$DOWNLOAD_URL"
 )
-EOF
+GO
 
-echo "Generated version.go with version $TAG"
+echo "Generated version.go with commit $COMMIT"
 echo ""
 echo "Update complete!"
